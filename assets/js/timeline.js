@@ -31,13 +31,15 @@ const TIMELINE = {
     loading.style.display = 'none';
     this.currentData = events;
 
-    // Dimensions — responsive untuk mobile
-    const isMobile = window.innerWidth < 768;
+    // Dimensions — responsive untuk mobile & tablet
+    const vw = window.innerWidth;
+    const isMobile = vw < 768;
+    const isTablet = vw >= 768 && vw < 1024;
     const containerWidth = container.clientWidth || 800;
-    // Mobile: SVG lebih compact, desktop: lebih lega
+
     const margin = {
       top: isMobile ? 24 : 40,
-      right: isMobile ? 20 : 120,
+      right: isMobile ? 16 : (isTablet ? 40 : 120),
       bottom: isMobile ? 24 : 40,
       left: isMobile ? 50 : 120
     };
@@ -69,7 +71,7 @@ const TIMELINE = {
       .attr('stdDeviation', 4)
       .attr('flood-color', 'rgba(0,0,0,0.4)');
 
-    // Gradient for line — solid gold, tidak pudar biar keliatan nyambung
+    // Gradient for line — solid gold
     const lineGrad = defs.append('linearGradient')
       .attr('id', 'timeline-line-grad')
       .attr('x1', '0%')
@@ -87,9 +89,10 @@ const TIMELINE = {
       .attr('stop-color', '#c9a227')
       .attr('stop-opacity', 0.35);
 
-    // Draw central vertical line — SOLID biar nyambung
-    const centerX = isMobile ? 40 : 60;
-    const bracketX = isMobile ? 80 : 100; // era bracket, sedikit lebih jauh biar kelihatan
+    // Draw central vertical line
+    const centerX = isMobile ? 40 : (isTablet ? 50 : 60);
+    const eraLabelX = centerX - (isMobile ? 36 : (isTablet ? 38 : 42));
+    const charSpacing = isMobile ? 9 : 10;
 
     g.append('line')
       .attr('x1', centerX)
@@ -102,18 +105,16 @@ const TIMELINE = {
     // Era labels — VERTICAL (kebawah) menggunakan tspan per karakter
     let currentEra = null;
     let eraStartY = 0;
-    const eraLabelX = centerX - (isMobile ? 36 : 42); // label di kiri center line, agak jauh biar ga overlap year
-    const charSpacing = isMobile ? 9 : 10;
 
     events.forEach((event, i) => {
       if (event.era !== currentEra) {
         if (currentEra !== null) {
-          // Garis separator horizontal (opsional, subtle)
+          // Separator line antar era
           const sepY = i * rowHeight;
           g.append('line')
             .attr('x1', centerX - 20)
             .attr('y1', sepY)
-            .attr('x2', centerX + (isMobile ? 100 : 150))
+            .attr('x2', centerX + (isMobile ? 80 : (isTablet ? 100 : 150)))
             .attr('y2', sepY)
             .attr('stroke', 'rgba(42,42,74,0.15)')
             .attr('stroke-width', 1);
@@ -122,14 +123,13 @@ const TIMELINE = {
         currentEra = event.era;
         eraStartY = i * rowHeight;
 
-        // Hitung jumlah event di era ini
+        // Hitung untuk vertical label
         const eraEventCount = events.filter(e => e.era === event.era).length;
         const eraHeight = eraEventCount * rowHeight;
         const eraMidY = i * rowHeight + eraHeight / 2;
         const textHeight = event.era.length * charSpacing;
         const startY = eraMidY - textHeight / 2 + charSpacing / 2;
 
-        // Vertical era label — tiap karakter sebagai tspan (kebawah)
         const eraColor = this.getEraColor(event.era);
         const eraText = event.era.toUpperCase();
         const labelText = g.append('text')
@@ -143,7 +143,7 @@ const TIMELINE = {
           .attr('letter-spacing', '0.5px')
           .attr('opacity', 0.5);
 
-        // Stack each character vertically (kebawah)
+        // Stack each character vertically
         eraText.split('').forEach((char, ci) => {
           labelText.append('tspan')
             .attr('x', eraLabelX)
@@ -169,7 +169,7 @@ const TIMELINE = {
       const catStyle = DATA.getCategoryStyle(event.kategori);
       const eraColor = this.getEraColor(event.era);
 
-      // Date label on the left of the circle
+      // Date label on the left
       g.append('text')
         .attr('x', centerX - 14)
         .attr('y', y + 4)
@@ -180,7 +180,7 @@ const TIMELINE = {
         .attr('font-weight', 600)
         .text(event.tahun);
 
-      // Circle node — langsung di centerX (garis pusat)
+      // Circle node
       const circleGroup = g.append('g')
         .attr('class', 'timeline-node')
         .attr('cursor', 'pointer');
@@ -209,34 +209,29 @@ const TIMELINE = {
 
       // Hover effects
       circleGroup.on('mouseenter', () => {
-        circleGroup.select('.timeline-circle')
-          .attr('r', 8);
-        circleGroup.select('.timeline-ring')
-          .attr('r', 15)
-          .attr('opacity', 0.9);
+        circleGroup.select('.timeline-circle').attr('r', 8);
+        circleGroup.select('.timeline-ring').attr('r', 15).attr('opacity', 0.9);
       });
-
       circleGroup.on('mouseleave', () => {
-        circleGroup.select('.timeline-circle')
-          .attr('r', 6);
-        circleGroup.select('.timeline-ring')
-          .attr('r', 12)
-          .attr('opacity', 0.7);
+        circleGroup.select('.timeline-circle').attr('r', 6);
+        circleGroup.select('.timeline-ring').attr('r', 12).attr('opacity', 0.7);
       });
 
-      // Horizontal connector line — digambar SETELAH circle, dari tepi kanan ring ke kanan
+      // Horizontal connector line
       g.append('line')
         .attr('class', 'connector-line')
         .attr('x1', centerX + 13)
         .attr('y1', y)
-        .attr('x2', centerX + (isMobile ? 44 : 58))
+        .attr('x2', centerX + (isMobile ? 44 : (isTablet ? 48 : 58)))
         .attr('y2', y)
         .attr('stroke', eraColor)
         .attr('stroke-width', 2.5)
         .attr('opacity', 0.6);
 
-      // Title (right side) — langsung nyambung dari ujung connector line
-      const titleX = centerX + (isMobile ? 50 : 65);
+      // Title (right side)
+      const titleX = centerX + (isMobile ? 50 : (isTablet ? 55 : 65));
+      const maxTitleLen = isMobile ? 25 : (isTablet ? 35 : 45);
+
       const titleText = g.append('text')
         .attr('class', 'timeline-title')
         .attr('x', titleX)
@@ -246,7 +241,7 @@ const TIMELINE = {
         .attr('font-family', 'Playfair Display, serif')
         .attr('font-size', isMobile ? 12 : 14)
         .attr('font-weight', 600)
-        .text(this.truncateText(event.judul, isMobile ? 25 : 45));
+        .text(this.truncateText(event.judul, maxTitleLen));
 
       // Category badge below title
       g.append('text')
@@ -258,9 +253,9 @@ const TIMELINE = {
         .attr('font-size', isMobile ? 9 : 10)
         .attr('font-weight', 500)
         .attr('opacity', 0.6)
-        .text(`${event.kategori} · ${event.provinsi}`);
+        .text(this.truncateText(`${event.kategori} · ${event.provinsi}`, isMobile ? 30 : 50));
 
-      // Tooltip show/hide
+      // Tooltip
       const showTooltip = () => {
         timelineTooltip.innerHTML = `
           <h4>${event.judul}</h4>
@@ -276,15 +271,16 @@ const TIMELINE = {
         const rect = this.svg.node().getBoundingClientRect();
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         timelineTooltip.style.display = 'block';
-        timelineTooltip.style.left = `${margin.left + centerX + (isMobile ? 55 : 65)}px`;
-        timelineTooltip.style.top = `${y + scrollTop + rect.top - 50}px`;
+        timelineTooltip.style.left = `${Math.min(margin.left + centerX + (isMobile ? 55 : 65), vw - 340)}px`;
+        timelineTooltip.style.top = `${Math.max(y + scrollTop + rect.top - 50, scrollTop + 20)}px`;
+        timelineTooltip.style.maxWidth = isMobile ? '260px' : '320px';
       };
 
       const hideTooltip = () => {
         timelineTooltip.style.display = 'none';
       };
 
-      // Click to zoom to map
+      // Click handler
       const handleClick = () => {
         if (typeof MAP !== 'undefined' && MAP.instance) {
           MAP.flyToEvent(event);
@@ -292,34 +288,23 @@ const TIMELINE = {
         }
       };
 
-      // Attach events: circle + title
       circleGroup.on('click', handleClick);
       circleGroup.on('mouseenter', showTooltip);
       circleGroup.on('mouseleave', hideTooltip);
 
       titleText.on('click', handleClick);
-      titleText.on('mouseenter', () => {
-        circleGroup.select('.timeline-circle')
-          .attr('r', 7)
-          .attr('stroke-width', 3);
-      });
-      titleText.on('mouseleave', () => {
-        circleGroup.select('.timeline-circle')
-          .attr('r', 5)
-          .attr('stroke-width', 1);
-      });
       titleText.on('mouseenter', showTooltip);
       titleText.on('mouseleave', hideTooltip);
     });
 
-    // Add auto-scroll behavior
+    // Ensure scrollable
     const svgEl = this.svg.node();
     if (svgEl) {
       svgEl.style.overflowX = 'auto';
       svgEl.style.overflowY = 'visible';
     }
 
-    // Era filter setup
+    // Filter setup
     this.setupFilterChips();
   },
 
@@ -337,6 +322,9 @@ const TIMELINE = {
   setupFilterChips() {
     const eraContainer = document.getElementById('eraFilterTimeline');
     const catContainer = document.getElementById('categoryFilterTimeline');
+
+    // Skip if already populated
+    if (eraContainer.querySelectorAll('.chip').length > 1) return;
 
     // Add era chips
     DATA.eras.forEach(era => {

@@ -213,28 +213,43 @@ const APP = {
     archiveGrid.className = 'archive-grid';
     archiveGrid.classList.add('grid-view');
 
+    // Scroll handler dibungkus dalam rAF biar smooth
+    let ticking = false;
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-      } else {
-        navbar.classList.remove('scrolled');
-      }
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+          } else {
+            navbar.classList.remove('scrolled');
+          }
 
-      // Back to top button
-      if (window.scrollY > 500) {
-        backToTop.classList.add('visible');
-      } else {
-        backToTop.classList.remove('visible');
-      }
+          // Back to top button
+          if (window.scrollY > 500) {
+            backToTop.classList.add('visible');
+          } else {
+            backToTop.classList.remove('visible');
+          }
 
-      // Active nav link
-      this.updateActiveNav();
+          // Active nav link
+          this.updateActiveNav();
+          ticking = false;
+        });
+        ticking = true;
+      }
     }, { passive: true });
 
     // Nav toggle (mobile) — with body class for overlay
     navToggle.addEventListener('click', () => {
       navLinks.classList.toggle('open');
       document.body.classList.toggle('nav-open');
+      // Update icon
+      const icon = navToggle.querySelector('i');
+      if (navLinks.classList.contains('open')) {
+        icon.className = 'fas fa-times';
+      } else {
+        icon.className = 'fas fa-bars';
+      }
     });
 
     // Close nav on overlay click
@@ -244,6 +259,19 @@ const APP = {
           !navToggle.contains(e.target)) {
         navLinks.classList.remove('open');
         document.body.classList.remove('nav-open');
+        const icon = navToggle.querySelector('i');
+        icon.className = 'fas fa-bars';
+      }
+    });
+
+    // Close nav on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && navLinks.classList.contains('open')) {
+        navLinks.classList.remove('open');
+        document.body.classList.remove('nav-open');
+        const icon = navToggle.querySelector('i');
+        icon.className = 'fas fa-bars';
+        navToggle.focus();
       }
     });
 
@@ -252,6 +280,8 @@ const APP = {
       link.addEventListener('click', () => {
         navLinks.classList.remove('open');
         document.body.classList.remove('nav-open');
+        const icon = navToggle.querySelector('i');
+        icon.className = 'fas fa-bars';
       });
     });
 
@@ -301,6 +331,17 @@ const APP = {
 
     // Scroll-based active section detection
     this.updateActiveNav();
+
+    // Resize handler — re-invalidate map dimensions
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (MAP.instance) {
+          MAP.instance.invalidateSize();
+        }
+      }, 250);
+    }, { passive: true });
   },
 
   /**
@@ -355,48 +396,74 @@ const APP = {
    * Dengan staggered delay untuk efek yang lebih smooth
    */
   setupScrollAnimations() {
+    // Cek prefers-reduced-motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      // If user prefers reduced motion, show everything immediately
+      document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
+      return;
+    }
+
+    // Single observer untuk semua fade-in elements
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          // Stagger children
-          const children = entry.target.querySelectorAll('.fade-in');
-          children.forEach((child, i) => {
-            setTimeout(() => {
-              child.classList.add('visible');
-            }, i * 60);
-          });
+          const target = entry.target;
+
+          // Jika target adalah archive-grid, trigger staggered children
+          if (target.classList.contains('archive-grid') || target.classList.contains('section-header')) {
+            target.classList.add('visible');
+            const children = target.querySelectorAll('.event-card.fade-in');
+            children.forEach((child, i) => {
+              setTimeout(() => {
+                child.classList.add('visible');
+              }, i * 80);
+            });
+          } else {
+            target.classList.add('visible');
+          }
+
+          // Unobserve after visible untuk performance
+          observer.unobserve(target);
         }
       });
     }, {
       threshold: 0.08,
-      rootMargin: '0px 0px -50px 0px'
+      rootMargin: '0px 0px -40px 0px'
     });
 
-    // Observe section headers & archive grid
-    document.querySelectorAll('.section-header, .archive-grid').forEach(el => {
+    // Observe elements with fade-in class
+    document.querySelectorAll('.fade-in').forEach(el => {
+      // Skip event cards — they are handled by their parent observer
+      if (!el.classList.contains('event-card')) {
+        observer.observe(el);
+      }
+    });
+
+    // Observe section headers for staggered children
+    document.querySelectorAll('.section-header').forEach(el => {
       observer.observe(el);
     });
 
-    // Observe hero section for entrance animation
-    const heroObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.1 });
+    // Observe archive grid
+    const archiveGrid = document.querySelector('.archive-grid');
+    if (archiveGrid) observer.observe(archiveGrid);
 
-    const heroContent = document.querySelector('.hero-content');
-    if (heroContent) heroObserver.observe(heroContent);
-
-    // Parallax effect on scroll for hero
+    // Parallax effect on scroll for hero — dibungkus rAF
+    let lastScrollY = 0;
+    let parallaxTicking = false;
     window.addEventListener('scroll', () => {
-      const scrollY = window.scrollY;
-      const hero = document.querySelector('.hero-content');
-      if (hero && scrollY < window.innerHeight) {
-        hero.style.transform = `translateY(${scrollY * 0.15}px)`;
-        hero.style.opacity = Math.max(0, 1 - scrollY / (window.innerHeight * 0.6));
+      lastScrollY = window.scrollY;
+      if (!parallaxTicking) {
+        requestAnimationFrame(() => {
+          const hero = document.querySelector('.hero-content');
+          if (hero && lastScrollY < window.innerHeight) {
+            hero.style.transform = `translateY(${lastScrollY * 0.15}px)`;
+            hero.style.opacity = Math.max(0, 1 - lastScrollY / (window.innerHeight * 0.6));
+          }
+          parallaxTicking = false;
+        });
+        parallaxTicking = true;
       }
     }, { passive: true });
   }
