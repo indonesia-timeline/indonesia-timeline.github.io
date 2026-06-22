@@ -1,0 +1,64 @@
+# ============================================================
+# Deploy to GitHub Pages — Auto deploy on push to main
+# ============================================================
+# Cara pakai:
+# 1. Push repo ini ke GitHub
+# 2. Buka Settings > Pages > Source: "GitHub Actions"
+# 3. Setiap push ke branch main akan auto-deploy
+#
+# Untuk custom domain:
+# - Tambahkan CNAME file di root ATAU
+# - Set di Settings > Pages > Custom domain
+# ============================================================
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    # Manual trigger dari GitHub Actions tab
+
+# Hentikan workflow yang sedang berjalan jika ada push baru
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+# Permission untuk deployment
+permissions:
+  contents: read
+  pages: write      # Untuk deploy ke GitHub Pages
+  id-token: write   # Untuk verifikasi deployment source
+
+jobs:
+  # ─── BUILD JOB ──────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Persiapan: upload seluruh folder static site
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Root folder — semua file di repo root
+          path: '.'
+
+  # ─── DEPLOY JOB ─────────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    # Environment untuk deployment tracking
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

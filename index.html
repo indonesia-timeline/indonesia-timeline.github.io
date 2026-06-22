@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsip Sejarah Indonesia — Interaktif</title>
+  <meta name="description" content="Jelajahi peristiwa sejarah Indonesia melalui peta interaktif, timeline, dan arsip digital.">
+  <meta name="theme-color" content="#1a1a2e">
+
+  <!--
+    ═══════════════════════════════════════════════
+    BASE URL CONFIGURATION
+    ═══════════════════════════════════════════════
+    Untuk GitHub Pages subpath (username.github.io/repo-name):
+      Ganti '' di bawah dengan '/repo-name'
+      Contoh: window.BASE_URL = '/arsip-sejarah-indonesia';
+
+    Untuk custom domain (contoh: sejarah.my.id):
+      Biarkan window.BASE_URL = '';
+
+    Untuk user site (username.github.io):
+      Biarkan window.BASE_URL = '';
+    ═══════════════════════════════════════════════
+  -->
+  <script>
+    // ═══════════════════════════════════════════════════
+    // BASE_URL Configuration
+    // ═══════════════════════════════════════════════════
+    // Untuk custom domain (contoh: sejarah.my.id):
+    //   Biarkan BASE_URL = ''
+    //
+    // Untuk user site (username.github.io):
+    //   Biarkan BASE_URL = ''
+    //
+    // Untuk project site (username.github.io/repo-name):
+    //   Ganti '' di bawah dengan '/repo-name'
+    //   Contoh: window.BASE_URL = '/arsip-sejarah-indonesia';
+    // ═══════════════════════════════════════════════════
+    window.BASE_URL = '';
+  </script>
+
+  <!-- Leaflet.js CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- D3.js CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles (relative path) -->
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <div class="nav-brand">
+        <i class="fas fa-landmark"></i>
+        <span>Arsip <span class="brand-accent">Sejarah</span> Indonesia</span>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#peta" class="nav-link active"><i class="fas fa-map-marked-alt"></i> Peta</a></li>
+        <li><a href="#timeline" class="nav-link"><i class="fas fa-clock"></i> Timeline</a></li>
+        <li><a href="#arsip" class="nav-link"><i class="fas fa-archive"></i> Arsip</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero" id="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-badge">Arsip Digital Interaktif</div>
+      <h1 class="hero-title">Jelajahi <span class="text-accent">Sejarah</span> Indonesia</h1>
+      <p class="hero-subtitle">Telusuri ribuan peristiwa bersejarah dari Sabang sampai Merauke melalui peta interaktif, timeline visual, dan arsip digital yang terkurasi.</p>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="stat-number" id="totalEvents">50+</span>
+          <span class="stat-label">Peristiwa</span>
+        </div>
+        <div class="hero-stat">
+          <span class="stat-number" id="totalEras">7</span>
+          <span class="stat-label">Era</span>
+        </div>
+        <div class="hero-stat">
+          <span class="stat-number" id="totalProvinces">15+</span>
+          <span class="stat-label">Provinsi</span>
+        </div>
+      </div>
+      <div class="hero-cta">
+        <a href="#peta" class="btn btn-primary"><i class="fas fa-map-marked-alt"></i> Jelajahi Peta</a>
+        <a href="#arsip" class="btn btn-outline"><i class="fas fa-search"></i> Cari Arsip</a>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator">
+      <span>Scroll untuk jelajahi</span>
+      <i class="fas fa-chevron-down"></i>
+    </div>
+  </section>
+
+  <!-- ========== MAP SECTION ========== -->
+  <section id="peta" class="section map-section">
+    <div class="section-header">
+      <div class="section-label">Peta Interaktif</div>
+      <h2 class="section-title">Peta Sejarah <span class="text-accent">Indonesia</span></h2>
+      <p class="section-desc">Klik pada marker peristiwa atau jelajah provinsi untuk melihat detail sejarah</p>
+    </div>
+    <div class="map-container-wrapper">
+      <div id="map" class="map-container"></div>
+      <div class="map-legend" id="mapLegend">
+        <div class="legend-header"><i class="fas fa-info-circle"></i> Kategori</div>
+        <div class="legend-items" id="legendItems"></div>
+      </div>
+    </div>
+    <div id="mapEventCard" class="map-event-card hidden">
+      <button class="map-event-close" id="mapEventClose"><i class="fas fa-times"></i></button>
+      <div class="map-event-content"></div>
+    </div>
+  </section>
+
+  <!-- ========== TIMELINE SECTION ========== -->
+  <section id="timeline" class="section timeline-section">
+    <div class="section-header">
+      <div class="section-label">Garis Waktu</div>
+      <h2 class="section-title">Timeline <span class="text-accent">Peristiwa</span></h2>
+      <p class="section-desc">Saksikan perjalanan sejarah Indonesia dalam linimasa interaktif</p>
+    </div>
+
+    <!-- Timeline Filters -->
+    <div class="timeline-filters" id="timelineFilters">
+      <div class="filter-group">
+        <label><i class="fas fa-clock"></i> Era</label>
+        <div class="filter-chips" id="eraFilterTimeline">
+          <button class="chip active" data-era="all">Semua Era</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label><i class="fas fa-tag"></i> Kategori</label>
+        <div class="filter-chips" id="categoryFilterTimeline">
+          <button class="chip active" data-category="all">Semua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-container">
+      <div id="d3Timeline" class="d3-timeline"></div>
+      <div id="timelineLoading" class="timeline-loading">
+        <i class="fas fa-spinner fa-spin"></i> Memuat timeline...
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ARCHIVE SECTION ========== -->
+  <section id="arsip" class="section archive-section">
+    <div class="section-header">
+      <div class="section-label">Arsip Digital</div>
+      <h2 class="section-title">Jelajahi <span class="text-accent">Arsip</span></h2>
+      <p class="section-desc">Cari, filter, dan telusuri peristiwa sejarah dengan detail sumber terpercaya</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="archive-toolbar">
+      <div class="search-box">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Cari peristiwa, tokoh, atau lokasi..." autocomplete="off">
+        <button class="search-clear" id="searchClear"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="filter-dropdowns">
+        <div class="filter-select">
+          <select id="filterEra">
+            <option value="all">Semua Era</option>
+          </select>
+        </div>
+        <div class="filter-select">
+          <select id="filterCategory">
+            <option value="all">Semua Kategori</option>
+          </select>
+        </div>
+        <div class="filter-select">
+          <select id="filterProvince">
+            <option value="all">Semua Provinsi</option>
+          </select>
+        </div>
+        <div class="filter-select">
+          <select id="filterYear">
+            <option value="all">Semua Tahun</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="archive-controls">
+        <span class="result-count" id="resultCount">Menampilkan 0 peristiwa</span>
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="grid" title="Grid View"><i class="fas fa-th"></i></button>
+          <button class="view-btn" data-view="list" title="List View"><i class="fas fa-list"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Cards Grid -->
+    <div class="archive-grid" id="archiveGrid"></div>
+
+    <!-- Loading State -->
+    <div id="archiveLoading" class="archive-loading">
+      <i class="fas fa-spinner fa-spin"></i> Memuat arsip...
+    </div>
+
+    <!-- Empty State -->
+    <div id="archiveEmpty" class="archive-empty hidden">
+      <i class="fas fa-search-minus"></i>
+      <h3>Tidak ditemukan hasil</h3>
+      <p>Coba ubah kata kunci atau filter yang digunakan</p>
+    </div>
+
+    <!-- Load More -->
+    <div class="archive-more" id="archiveMore">
+      <button class="btn btn-outline" id="loadMoreBtn"><i class="fas fa-plus"></i> Muat Lebih Banyak</button>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <i class="fas fa-landmark"></i>
+        <span>Arsip Sejarah Indonesia</span>
+      </div>
+      <p class="footer-desc">Arsip digital interaktif untuk melestarikan dan mempelajari sejarah bangsa Indonesia. Data bersumber dari arsip nasional, museum, dan sumber sejarah terpercaya.</p>
+      <div class="footer-links">
+        <a href="#peta"><i class="fas fa-map-marked-alt"></i> Peta</a>
+        <a href="#timeline"><i class="fas fa-clock"></i> Timeline</a>
+        <a href="#arsip"><i class="fas fa-archive"></i> Arsip</a>
+        <a href="https://github.com" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Arsip Sejarah Indonesia. Dibangun dengan <i class="fas fa-heart"></i> untuk sejarah bangsa.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== BACK TO TOP ========== -->
+  <button id="backToTop" class="back-to-top" title="Kembali ke atas">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <!-- ========== SCRIPTS (relative paths) ========== -->
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/map.js"></script>
+  <script src="assets/js/timeline.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
