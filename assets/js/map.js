@@ -9,22 +9,24 @@ const MAP = {
   geoJsonLayer: null,
 
   /**
-   * Kategori marker icons
+   * Kategori marker icons — Lebih besar, lebih terlihat, dengan glow
    */
   createIcon(color) {
+    const glowColor = color + '66';
     return L.divIcon({
       className: 'custom-marker-icon',
       html: `<div style="
-        width: 16px; height: 16px;
+        width: 20px; height: 20px;
         background: ${color};
-        border: 3px solid var(--color-bg-card, #16213e);
+        border: 3px solid rgba(22, 33, 62, 0.9);
         border-radius: 50%;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        transition: transform 0.2s;
+        box-shadow: 0 0 12px ${glowColor}, 0 3px 12px rgba(0,0,0,0.5);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        cursor: pointer;
       "></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      popupAnchor: [0, -10]
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -14]
     });
   },
 
@@ -91,6 +93,29 @@ const MAP = {
       marker.bindPopup(popupContent, {
         maxWidth: 300,
         className: 'custom-popup'
+      });
+
+      // Hover effect on marker
+      marker.on('mouseover', () => {
+        const el = marker.getElement();
+        if (el) {
+          const div = el.querySelector('div');
+          if (div) {
+            div.style.transform = 'scale(1.4)';
+            div.style.boxShadow = `0 0 20px ${catStyle.color}88, 0 4px 16px rgba(0,0,0,0.6)`;
+          }
+        }
+      });
+
+      marker.on('mouseout', () => {
+        const el = marker.getElement();
+        if (el) {
+          const div = el.querySelector('div');
+          if (div) {
+            div.style.transform = 'scale(1)';
+            div.style.boxShadow = `0 0 12px ${catStyle.color}66, 0 3px 12px rgba(0,0,0,0.5)`;
+          }
+        }
       });
 
       marker.on('click', () => {

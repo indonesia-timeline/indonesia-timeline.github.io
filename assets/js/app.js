@@ -45,6 +45,15 @@ const APP = {
     document.getElementById('resultCount').textContent =
       `Menampilkan ${Math.min(this.pageSize, DATA.events.length)} dari ${DATA.events.length} peristiwa`;
 
+    // Entrance animation untuk hero setelah semua siap
+    requestAnimationFrame(() => {
+      const heroContent = document.querySelector('.hero-content');
+      if (heroContent) {
+        heroContent.style.opacity = '1';
+        heroContent.style.transform = 'translateY(0)';
+      }
+    });
+
     console.log('🚀 Arsip Sejarah Indonesia siap!');
   },
 
@@ -222,15 +231,27 @@ const APP = {
       this.updateActiveNav();
     }, { passive: true });
 
-    // Nav toggle (mobile)
+    // Nav toggle (mobile) — with body class for overlay
     navToggle.addEventListener('click', () => {
       navLinks.classList.toggle('open');
+      document.body.classList.toggle('nav-open');
+    });
+
+    // Close nav on overlay click
+    document.addEventListener('click', (e) => {
+      if (navLinks.classList.contains('open') &&
+          !navLinks.contains(e.target) &&
+          !navToggle.contains(e.target)) {
+        navLinks.classList.remove('open');
+        document.body.classList.remove('nav-open');
+      }
     });
 
     // Close nav on link click (mobile)
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
         navLinks.classList.remove('open');
+        document.body.classList.remove('nav-open');
       });
     });
 
@@ -331,9 +352,34 @@ const APP = {
 
   /**
    * Setup scroll-triggered fade-in animations
+   * Dengan staggered delay untuk efek yang lebih smooth
    */
   setupScrollAnimations() {
     const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          // Stagger children
+          const children = entry.target.querySelectorAll('.fade-in');
+          children.forEach((child, i) => {
+            setTimeout(() => {
+              child.classList.add('visible');
+            }, i * 60);
+          });
+        }
+      });
+    }, {
+      threshold: 0.08,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    // Observe section headers & archive grid
+    document.querySelectorAll('.section-header, .archive-grid').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Observe hero section for entrance animation
+    const heroObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
@@ -341,10 +387,18 @@ const APP = {
       });
     }, { threshold: 0.1 });
 
-    // Observe section headers
-    document.querySelectorAll('.section-header, .archive-grid').forEach(el => {
-      observer.observe(el);
-    });
+    const heroContent = document.querySelector('.hero-content');
+    if (heroContent) heroObserver.observe(heroContent);
+
+    // Parallax effect on scroll for hero
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const hero = document.querySelector('.hero-content');
+      if (hero && scrollY < window.innerHeight) {
+        hero.style.transform = `translateY(${scrollY * 0.15}px)`;
+        hero.style.opacity = Math.max(0, 1 - scrollY / (window.innerHeight * 0.6));
+      }
+    }, { passive: true });
   }
 };
 
