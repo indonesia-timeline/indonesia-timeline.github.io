@@ -69,7 +69,7 @@ const TIMELINE = {
       .attr('stdDeviation', 4)
       .attr('flood-color', 'rgba(0,0,0,0.4)');
 
-    // Gradient for line
+    // Gradient for line — solid gold, tidak pudar biar keliatan nyambung
     const lineGrad = defs.append('linearGradient')
       .attr('id', 'timeline-line-grad')
       .attr('x1', '0%')
@@ -80,106 +80,78 @@ const TIMELINE = {
     lineGrad.append('stop')
       .attr('offset', '0%')
       .attr('stop-color', '#c9a227')
-      .attr('stop-opacity', 0.6);
-
-    lineGrad.append('stop')
-      .attr('offset', '50%')
-      .attr('stop-color', '#c9a227')
-      .attr('stop-opacity', 0.3);
+      .attr('stop-opacity', 0.5);
 
     lineGrad.append('stop')
       .attr('offset', '100%')
       .attr('stop-color', '#c9a227')
-      .attr('stop-opacity', 0);
+      .attr('stop-opacity', 0.35);
 
-    // Draw central vertical line
+    // Draw central vertical line — SOLID biar nyambung
     const centerX = isMobile ? 40 : 60;
+    const bracketX = isMobile ? 80 : 100; // era bracket, sedikit lebih jauh biar kelihatan
 
     g.append('line')
       .attr('x1', centerX)
       .attr('y1', 0)
       .attr('x2', centerX)
-      .attr('y2', events.length * rowHeight)
+      .attr('y2', events.length * rowHeight + 10)
       .attr('stroke', 'url(#timeline-line-grad)')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '6,4');
+      .attr('stroke-width', 2.5);
 
-    // Era separators and labels
+    // Era labels — VERTICAL (kebawah) menggunakan tspan per karakter
     let currentEra = null;
     let eraStartY = 0;
+    const eraLabelX = centerX - (isMobile ? 36 : 42); // label di kiri center line, agak jauh biar ga overlap year
+    const charSpacing = isMobile ? 9 : 10;
 
     events.forEach((event, i) => {
       if (event.era !== currentEra) {
         if (currentEra !== null) {
-          // Draw era bracket
-          const eraEndY = i * rowHeight;
+          // Garis separator horizontal (opsional, subtle)
+          const sepY = i * rowHeight;
           g.append('line')
-            .attr('x1', centerX + (isMobile ? 140 : 180))
-            .attr('y1', eraStartY + rowHeight / 2)
-            .attr('x2', centerX + (isMobile ? 140 : 180))
-            .attr('y2', eraEndY - rowHeight / 2)
-            .attr('stroke', this.getEraColor(currentEra))
-            .attr('stroke-width', 1.5)
-            .attr('opacity', 0.3);
-
-          g.append('line')
-            .attr('x1', centerX + (isMobile ? 135 : 175))
-            .attr('y1', eraStartY + rowHeight / 2)
-            .attr('x2', centerX + (isMobile ? 145 : 185))
-            .attr('y2', eraStartY + rowHeight / 2)
-            .attr('stroke', this.getEraColor(currentEra))
-            .attr('stroke-width', 1.5)
-            .attr('opacity', 0.3);
-
-          g.append('line')
-            .attr('x1', centerX + (isMobile ? 135 : 175))
-            .attr('y1', eraEndY - rowHeight / 2)
-            .attr('x2', centerX + (isMobile ? 145 : 185))
-            .attr('y2', eraEndY - rowHeight / 2)
-            .attr('stroke', this.getEraColor(currentEra))
-            .attr('stroke-width', 1.5)
-            .attr('opacity', 0.3);
+            .attr('x1', centerX - 20)
+            .attr('y1', sepY)
+            .attr('x2', centerX + (isMobile ? 100 : 150))
+            .attr('y2', sepY)
+            .attr('stroke', 'rgba(42,42,74,0.15)')
+            .attr('stroke-width', 1);
         }
 
         currentEra = event.era;
         eraStartY = i * rowHeight;
 
-        // Era label
-        g.append('text')
-          .attr('x', centerX + (isMobile ? 150 : 200))
-          .attr('y', i * rowHeight + rowHeight / 2 + 4)
-          .attr('fill', this.getEraColor(event.era))
+        // Hitung jumlah event di era ini
+        const eraEventCount = events.filter(e => e.era === event.era).length;
+        const eraHeight = eraEventCount * rowHeight;
+        const eraMidY = i * rowHeight + eraHeight / 2;
+        const textHeight = event.era.length * charSpacing;
+        const startY = eraMidY - textHeight / 2 + charSpacing / 2;
+
+        // Vertical era label — tiap karakter sebagai tspan (kebawah)
+        const eraColor = this.getEraColor(event.era);
+        const eraText = event.era.toUpperCase();
+        const labelText = g.append('text')
+          .attr('x', eraLabelX)
+          .attr('y', startY)
+          .attr('text-anchor', 'middle')
+          .attr('fill', eraColor)
           .attr('font-family', 'Inter, sans-serif')
           .attr('font-size', isMobile ? 9 : 10)
-          .attr('font-weight', 600)
-          .attr('letter-spacing', '1px')
-          .attr('text-transform', 'uppercase')
-          .attr('opacity', 0.6)
-          .text(`── ${event.era}`);
+          .attr('font-weight', 700)
+          .attr('letter-spacing', '0.5px')
+          .attr('opacity', 0.5);
+
+        // Stack each character vertically (kebawah)
+        eraText.split('').forEach((char, ci) => {
+          labelText.append('tspan')
+            .attr('x', eraLabelX)
+            .attr('dy', ci === 0 ? 0 : `${charSpacing}px`)
+            .text(char);
+        });
       }
     });
-
-    // End bracket for last era
-    if (currentEra) {
-      const lastY = events.length * rowHeight;
-      g.append('line')
-        .attr('x1', centerX + (isMobile ? 140 : 180))
-        .attr('y1', eraStartY + rowHeight / 2)
-        .attr('x2', centerX + (isMobile ? 140 : 180))
-        .attr('y2', lastY - rowHeight / 2)
-        .attr('stroke', this.getEraColor(currentEra))
-        .attr('stroke-width', 1.5)
-        .attr('opacity', 0.3);
-
-      g.append('line')
-        .attr('x1', centerX + (isMobile ? 135 : 175))
-        .attr('y1', lastY - rowHeight / 2)
-        .attr('x2', centerX + (isMobile ? 145 : 185))
-        .attr('y2', lastY - rowHeight / 2)
-        .attr('stroke', this.getEraColor(currentEra))
-        .attr('stroke-width', 1.5)
-        .attr('opacity', 0.3);
-    }
 
     // Create tooltip element once
     let timelineTooltip = document.getElementById('timelineTooltip');
@@ -197,78 +169,77 @@ const TIMELINE = {
       const catStyle = DATA.getCategoryStyle(event.kategori);
       const eraColor = this.getEraColor(event.era);
 
-      // Horizontal connector line
-      g.append('line')
-        .attr('x1', centerX)
-        .attr('y1', y)
-        .attr('x2', centerX + (isMobile ? 40 : 50))
-        .attr('y2', y)
-        .attr('stroke', eraColor)
-        .attr('stroke-width', 1.5)
-        .attr('opacity', 0.4);
-
       // Date label on the left of the circle
       g.append('text')
-        .attr('x', centerX - 12)
+        .attr('x', centerX - 14)
         .attr('y', y + 4)
         .attr('text-anchor', 'end')
         .attr('fill', '#9a9ab0')
         .attr('font-family', 'Inter, sans-serif')
         .attr('font-size', isMobile ? 10 : 11)
-        .attr('font-weight', 500)
+        .attr('font-weight', 600)
         .text(event.tahun);
 
-      // Circle node
+      // Circle node — langsung di centerX (garis pusat)
       const circleGroup = g.append('g')
         .attr('class', 'timeline-node')
-        .attr('cursor', 'pointer')
-        .style('filter', 'url(#timeline-shadow)');
+        .attr('cursor', 'pointer');
 
       // Outer ring
       circleGroup.append('circle')
         .attr('class', 'timeline-ring')
         .attr('cx', centerX)
         .attr('cy', y)
-        .attr('r', 11)
-        .attr('fill', 'rgba(22, 33, 62, 0.9)')
+        .attr('r', 12)
+        .attr('fill', 'rgba(15, 15, 26, 0.95)')
         .attr('stroke', eraColor)
-        .attr('stroke-width', 2)
-        .attr('opacity', 0.3);
+        .attr('stroke-width', 2.5)
+        .attr('opacity', 0.7);
 
       // Inner dot
       circleGroup.append('circle')
         .attr('class', 'timeline-circle')
         .attr('cx', centerX)
         .attr('cy', y)
-        .attr('r', 5)
+        .attr('r', 6)
         .attr('fill', catStyle.color)
-        .attr('stroke', eraColor)
-        .attr('stroke-width', 1)
-        .style('transition', 'r 0.2s ease, stroke-width 0.2s ease');
+        .attr('stroke', 'none')
+        .style('filter', 'url(#timeline-shadow)')
+        .style('transition', 'r 0.2s ease');
 
       // Hover effects
       circleGroup.on('mouseenter', () => {
         circleGroup.select('.timeline-circle')
-          .attr('r', 7)
-          .attr('stroke-width', 3);
+          .attr('r', 8);
         circleGroup.select('.timeline-ring')
-          .attr('r', 14)
-          .attr('opacity', 0.6);
+          .attr('r', 15)
+          .attr('opacity', 0.9);
       });
 
       circleGroup.on('mouseleave', () => {
         circleGroup.select('.timeline-circle')
-          .attr('r', 5)
-          .attr('stroke-width', 1);
+          .attr('r', 6);
         circleGroup.select('.timeline-ring')
-          .attr('r', 11)
-          .attr('opacity', 0.3);
+          .attr('r', 12)
+          .attr('opacity', 0.7);
       });
 
-      // Title (right side)
+      // Horizontal connector line — digambar SETELAH circle, dari tepi kanan ring ke kanan
+      g.append('line')
+        .attr('class', 'connector-line')
+        .attr('x1', centerX + 13)
+        .attr('y1', y)
+        .attr('x2', centerX + (isMobile ? 44 : 58))
+        .attr('y2', y)
+        .attr('stroke', eraColor)
+        .attr('stroke-width', 2.5)
+        .attr('opacity', 0.6);
+
+      // Title (right side) — langsung nyambung dari ujung connector line
+      const titleX = centerX + (isMobile ? 50 : 65);
       const titleText = g.append('text')
         .attr('class', 'timeline-title')
-        .attr('x', centerX + (isMobile ? 50 : 60))
+        .attr('x', titleX)
         .attr('y', y)
         .attr('dy', '-2px')
         .attr('fill', '#e8e8f0')
@@ -279,14 +250,14 @@ const TIMELINE = {
 
       // Category badge below title
       g.append('text')
-        .attr('x', centerX + (isMobile ? 50 : 60))
+        .attr('x', titleX)
         .attr('y', y)
-        .attr('dy', '14px')
+        .attr('dy', '15px')
         .attr('fill', catStyle.color)
         .attr('font-family', 'Inter, sans-serif')
         .attr('font-size', isMobile ? 9 : 10)
         .attr('font-weight', 500)
-        .attr('opacity', 0.7)
+        .attr('opacity', 0.6)
         .text(`${event.kategori} · ${event.provinsi}`);
 
       // Tooltip show/hide
