@@ -1496,7 +1496,7 @@ h1, h2, h3, h4, h5, h6 {
   /* Timeline */
   .timeline-filters {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .filter-group {
@@ -1504,15 +1504,14 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .filter-chips {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 6px;
+    display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    scrollbar-width: thin;
   }
 
-  .filter-chips::-webkit-scrollbar {
-    height: 3px;
+  .chip {
+    padding: 5px 10px;
+    font-size: 0.7rem;
   }
 
   .filter-dropdowns {

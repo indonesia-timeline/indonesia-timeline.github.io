@@ -31,11 +31,19 @@ const TIMELINE = {
     loading.style.display = 'none';
     this.currentData = events;
 
-    // Dimensions
+    // Dimensions — responsive untuk mobile
     const isMobile = window.innerWidth < 768;
-    const margin = { top: 40, right: isMobile ? 60 : 120, bottom: 40, left: isMobile ? 60 : 120 };
-    const width = isMobile ? 600 : Math.max(800, events.length * 28 + margin.left + margin.right);
-    const rowHeight = 70;
+    const containerWidth = container.clientWidth || 800;
+    // Mobile: SVG lebih compact, desktop: lebih lega
+    const margin = {
+      top: isMobile ? 24 : 40,
+      right: isMobile ? 20 : 120,
+      bottom: isMobile ? 24 : 40,
+      left: isMobile ? 50 : 120
+    };
+    const rowHeight = isMobile ? 60 : 70;
+    const minWidth = isMobile ? Math.max(containerWidth, 360) : 800;
+    const width = Math.max(minWidth, events.length * 26 + margin.left + margin.right);
     const height = events.length * rowHeight + margin.top + margin.bottom;
 
     // Create SVG
