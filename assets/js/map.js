@@ -54,6 +54,16 @@ const MAP = {
     // Add scale
     L.control.scale({ position: 'bottomleft', imperial: false }).addTo(this.instance);
 
+    // Fix size untuk mobile — pastikan peta full-width
+    setTimeout(() => {
+      this.instance.invalidateSize();
+    }, 200);
+
+    // Fix size lagi setelah semua konten termuat
+    setTimeout(() => {
+      this.instance.invalidateSize();
+    }, 800);
+
     return this.instance;
   },
 
@@ -73,27 +83,8 @@ const MAP = {
         riseOnHover: true
       });
 
-      // Popup content
-      const popupContent = `
-        <h4>${event.judul}</h4>
-        <div class="popup-meta">
-          <i class="fas fa-calendar-alt"></i> ${DATA.formatDate(event.tanggal)} &middot;
-          <i class="fas fa-map-marker-alt"></i> ${event.provinsi}
-        </div>
-        <div class="popup-meta">
-          <span style="color:${catStyle.color}">●</span> ${event.kategori} &middot;
-          <i class="fas fa-clock"></i> Era ${event.era}
-        </div>
-        <p style="font-size:0.82rem;margin-top:6px;color:#aaa;">${event.deskripsi.substring(0, 150)}...</p>
-        <a href="${event.link}" target="_blank" rel="noopener" style="color:${catStyle.color};font-size:0.78rem;margin-top:6px;display:inline-block;">
-          <i class="fas fa-external-link-alt"></i> Sumber: ${event.sumber}
-        </a>
-      `;
-
-      marker.bindPopup(popupContent, {
-        maxWidth: 300,
-        className: 'custom-popup'
-      });
+      // Popup dinonaktifkan — cukup pakai event card di luar peta biar ga dobel
+      // (Hanya di-desktop bisa pakai popup, di-mobile cukup card external)
 
       // Hover effect on marker
       marker.on('mouseover', () => {
